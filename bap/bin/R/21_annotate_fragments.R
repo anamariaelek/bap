@@ -50,23 +50,32 @@ if(FALSE){
 
 # Import frags and annotate with bead
 frags <- fread(cmd = paste0("zcat < ", frag_bedpe_file), col.names = c("chr", "start", "end", "read_name")) 
+if (dim(frags)[1]==0)
+  frags <- data.table(chr='',start=NA, end=NA, read_name='')
 bead_read <- fread(cmd = paste0("zcat < ", read_bead_file), col.names = c("read_name", "bead_id"))%>% na.omit() %>% unique()
+if (dim(bead_read)[1]==0)
+  bead_read <- data.table(read_name='',bead_id='')
 mdf <- merge(frags, bead_read, by= "read_name") %>% na.omit()
+mdf <- mdf[read_name!='']
 
 # Filter for fragments overlapping the blacklist
-bl <- fread(blacklist_file, col.names = c("chr", "start", "end")) %>% data.frame() %>% makeGRangesFromDataFrame()
-ov_bl <- findOverlaps(bl, makeGRangesFromDataFrame(mdf))
-blacklist_reads <- mdf$read_name[subjectHits(ov_bl)]
-mdf <- mdf[read_name %ni% blacklist_reads]
+if (dim(mdf)[1]>0) {
+  bl <- fread(blacklist_file, col.names = c("chr", "start", "end")) %>% data.frame() %>% makeGRangesFromDataFrame()
+  ov_bl <- findOverlaps(bl, makeGRangesFromDataFrame(mdf))
+  blacklist_reads <- mdf$read_name[subjectHits(ov_bl)]
+  mdf <- mdf[read_name %ni% blacklist_reads]
+}
 
 # NOTE: the majority of the missing read names are instances where the MAPQ filter was not surpassed.
 
 # Quantify the number of unique fragments per barcode
 pcr_dup_df <- mdf[, .(count = .N), by = list(chr, start, end, bead_id)]
 out_bead_quant <- pcr_dup_df[,.(nUnique = .N), by = bead_id]
+if (nrow(out_bead_quant)==0) out_bead_quant <- data.table("N",0)
 
 # Export tables
 write.table(mdf, file = annotated_out_file, row.names = FALSE, col.names = FALSE, quote = FALSE, sep = "\t")
+message("Saved ", nrow(mdf), " annotated fragments to ", annotated_out_file)
 write.table(out_bead_quant, file = unique_count_out_file, row.names = FALSE, col.names = FALSE, quote = FALSE, sep = "\t")
-
+message("Saved counts of ", nrow(out_bead_quant), " barcodes to ",unique_count_out_file )
 

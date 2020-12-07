@@ -42,10 +42,16 @@ nuc_sum <- nuc_in %>% group_by(cell_barcode) %>%
   summarize(totalNuclearFrags = sum(n_total), 
             uniqueNuclearFrags = sum(n_unique))
 
-mito_sum <- mito_in %>% group_by(cell_barcode) %>%
-  summarize(totalMitoFrags = sum(n_total), 
-            uniqueMitoFrags = sum(n_unique))
-basic_qc <- left_join(nuc_sum, mito_sum, by = "cell_barcode")
+if (nrow(mito_in)>0) {
+  mito_sum <- mito_in %>% group_by(cell_barcode) %>%
+    summarize(totalMitoFrags = sum(n_total), 
+              uniqueMitoFrags = sum(n_unique))
+  basic_qc <- left_join(nuc_sum, mito_sum, by = "cell_barcode")
+} else {
+  basic_qc <- nuc_sum
+  basic_qc$totalMitoFrags <- 0
+  basic_qc$uniqueMitoFrags <- 0
+}
 
 if(species_mix != "none"){
   

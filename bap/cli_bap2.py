@@ -218,7 +218,7 @@ def main(mode, input, output, name, ncores, reference_genome,
 		else:
 			snake_log_preference = ' &>' + snake_log
 		
-		snakecmd_chr = p.snakemake+snakeclust+' --snakefile '+script_dir+'/bin/snake/Snakefile.bap2.chr --cores '+ncores+' --config cfp="' + y_s + '" --stats '+snake_stats+snake_log_preference
+		snakecmd_chr = p.snakemake+snakeclust+' --snakefile '+script_dir+'/bin/snake/Snakefile.bap2.chr --cores '+ncores+' --config cfp="' + y_s + '" --stats '+snake_stats+snake_log_preference+' --latency-wait 600'
 		os.system(snakecmd_chr)
 		
 		# Check to make sure snakemake Processing worked
